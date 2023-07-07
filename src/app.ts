@@ -46,6 +46,10 @@ app.get('/getallbooks', async function (req, res) {
     let bookArray = await getAllBooks()
     res.send(bookArray)
     });
+app.get('/', (req, res) => {
+    res.send('Welcome to our library!')
+});
+
 
 function getAllBooks() {
     
