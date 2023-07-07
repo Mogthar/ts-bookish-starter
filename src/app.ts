@@ -17,3 +17,6 @@ app.listen(port, () => {
  */
 app.use('/healthcheck', healthcheckRoutes);
 app.use('/books', bookRoutes);
+app.get('/getallbooks', (req, res) => {
+    return res.status(200).json({ status: 'OK' }); //insert functionality here
+})
