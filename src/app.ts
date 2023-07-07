@@ -1,11 +1,10 @@
 import express from 'express';
 import 'dotenv/config';
-
 import healthcheckRoutes from './controllers/healthcheckController';
 import bookRoutes from './controllers/bookController';
 
-var Request = require('tedious').Request;
-var Connection = require('tedious').Connection;
+var Request = require('tedious').Request;               // has events such as 
+var Connection = require('tedious').Connection;         // has events such as on 'connect', 'end' etc
 var config = {
     server: "localhost",
     options :{
@@ -33,19 +32,14 @@ connection.on('connect', function(err){
 
 connection.connect();
 
-
-const port = process.env['PORT'] || 3000;
-
+const port = process.env['PORT'] || 3000;      // WHAT IS THIS SYNTAX??
 const app = express();
+
+// define api use
 app.use(express.urlencoded({ extended: true }));
 app.listen(port, () => {
     return console.log(`Express is listening at http://localhost:${port}`);
 });
-
-/**
- * Primary app routes.
- */
-
 app.use('/healthcheck', healthcheckRoutes);
 app.use('/books', bookRoutes);
 app.get('/getallbooks', async function (req, res) {
@@ -56,12 +50,12 @@ app.get('/getallbooks', async function (req, res) {
 function getAllBooks() {
     
     return new Promise((resolve, reject) => {
+        let bookArray = [];
         var request = new Request('SELECT * FROM CATALOGUE;', (err) => {
             if(err){
                 throw err;
             }                                                    
         });
-        let bookArray = [];
         request.on('row', function(columns){
             let data = [];
             columns.forEach(function(column) {
