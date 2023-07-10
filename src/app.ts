@@ -37,7 +37,7 @@ connection.connect();
 const port = process.env['PORT'] || 3000;
 
 const app = express();
-app.use(express.urlencoded({ extended: true }));
+app.use(express.urlencoded({ extended: true }));            // what is this??
 app.listen(port, () => {
     return console.log(`Express is listening at http://localhost:${port}`);
 });
@@ -53,8 +53,50 @@ app.get('/getallbooks', async function (req, res) {
     res.send(bookArray)
     });
 
+
+app.post('/test', function(req, res) {
+    let testVar = req.body.testInput;
+    console.log(testVar);
+});
+
+app.get('/test', function(req, res) {
+    res.send('Hi, try and input something here');
+});
+
+/*
+app.put('/login', async function (req, res) {
+    let userValidation = await checkUser('no, 'no');
+    // take string and compare to database
+    // if a match, give token and print success
+    // if not, print user not valid
+});
+*/
+
+function checkUser(username, password)
+{
+    return new Promise((resolve, reject) => {
+        var sqlCommand = 'SELECT Token FROM Users \n WHERE Username=\'' + username + '\';';
+        var request = new Request(sqlCommand, (err) => {
+            if(err){
+                throw err;
+            }                                                    
+        });
+
+        let result;
+        request.on('row', function(columns){
+            columns.forEach(function(column) {
+                result = column.value;
+            });
+        });
+
+        request.on('requestCompleted', function(rowCount, more){
+            resolve(result === password);
+        });
+        connection.execSql(request);
+    })
+}
+
 function getAllBooks() {
-    
     return new Promise((resolve, reject) => {
         var request = new Request('SELECT * FROM CATALOGUE;', (err) => {
             if(err){
