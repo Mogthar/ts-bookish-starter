@@ -26,6 +26,10 @@
   "dependencies": {
     "dotenv": "^16.0.0",
     "express": "^4.17.1",
+    "jsonwebtoken": "^9.0.1",
+    "passport": "^0.5.3",
+    "passport-jwt": "^4.0.1",
+    "passport-local": "^1.0.0",
     "tedious": "^16.1.0"
   },
   "engines": {

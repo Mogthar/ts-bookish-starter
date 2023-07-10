@@ -4,6 +4,11 @@ import 'dotenv/config';
 import healthcheckRoutes from './controllers/healthcheckController';
 import bookRoutes from './controllers/bookController';
 
+import {Request as ExpressRequest} from 'express'
+const jwt = require('jsonwebtoken');
+const passport = require('passport');
+var LocalStrategy = require('passport-local').Strategy;
+
 var Request = require('tedious').Request;
 var Connection = require('tedious').Connection;
 var config = {
@@ -37,6 +42,7 @@ connection.connect();
 const port = process.env['PORT'] || 3000;
 
 const app = express();
+const router = express.Router();
 app.use(express.urlencoded({ extended: true }));            // what is this??
 app.listen(port, () => {
     return console.log(`Express is listening at http://localhost:${port}`);
@@ -59,23 +65,71 @@ app.post('/test', function(req, res) {
     console.log(testVar);
 });
 
-app.get('/test', function(req, res) {
-    res.send('Hi, try and input something here');
+app.get("/login", function(req, res) {
+    res.sendFile(__dirname + "/pages/index.html");
 });
 
-/*
-app.put('/login', async function (req, res) {
-    let userValidation = await checkUser('no, 'no');
-    // take string and compare to database
-    // if a match, give token and print success
-    // if not, print user not valid
-});
-*/
+//var passport = require('passport')
 
-function checkUser(username, password)
+passport.use(new LocalStrategy({
+        usernameField: 'username',
+        passwordField: 'password'
+    },
+    async function verify(userName, password, cb) {
+        await findUser(userName, password)
+            .then(user => {
+                if (!user) {
+                    console.log("no match");
+                    return cb(null, false, {message: 'Incorrect username or password.'});
+                }
+                else {
+                    console.log("match");
+                    return cb(null, user, {message: 'Logged in succesfully'});
+                }
+            })
+            .catch(err => cb(err));
+    }
+));
+
+app.post('/login', function (req, res, next) {
+    passport.authenticate('local', {session: false}, (err, user, info) => {
+        if (err) {
+            console.log("error 1");
+            console.log(err)
+            
+            return res.status(400).json({
+                message: 'Something is not right',
+                user: user
+            });
+        }
+        if (!user) {
+            console.log("no user object");
+        }
+            
+        
+
+        const token = jwt.sign(JSON.stringify(user), 'your_just_secret');
+        console.log("got the token");
+        return res.json({user, token});
+
+        /*
+        req.login(user, {session: false}, (err) => {
+            if (err) {
+                res.send(err);
+            }
+
+            const token = jwt.sign(user, 'your_jwt_secret');
+            return res.json({user, token});
+        
+        })
+        */
+    })(req, res, next);
+}); 
+
+export function findUser(userName, password)
 {
     return new Promise((resolve, reject) => {
-        var sqlCommand = 'SELECT Token FROM Users \n WHERE Username=\'' + username + '\';';
+        var sqlCommand = 'SELECT Token FROM Users \n WHERE Username=\'' + userName + '\';';
         var request = new Request(sqlCommand, (err) => {
             if(err){
                 throw err;
@@ -90,11 +144,19 @@ function checkUser(username, password)
         });
 
         request.on('requestCompleted', function(rowCount, more){
-            resolve(result === password);
+            if (result === password) {
+                console.log("match");
+                resolve(new User(userName, password));
+            }
+            else {
+                console.log("no match");
+                resolve(null);
+            }
         });
         connection.execSql(request);
     })
 }
+
 
 function getAllBooks() {
     return new Promise((resolve, reject) => {
@@ -130,4 +192,12 @@ class Book{
     }
 }
 
-
+class User{
+    userName: string;
+    password: string;
+    constructor(userName: string, password: string)
+    {
+        this.userName = userName
+        this.password = password
+    }
+}
