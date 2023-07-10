@@ -7,6 +7,9 @@ import bookRoutes from './controllers/bookController';
 import {Request as ExpressRequest} from 'express'
 const jwt = require('jsonwebtoken');
 const passport = require('passport');
+const passportJWT = require("passport-jwt");
+const JWTStrategy = passportJWT.Strategy;
+const ExtractJWT = passportJWT.ExtractJwt;
 var LocalStrategy = require('passport-local').Strategy;
 
 var Request = require('tedious').Request;
@@ -52,25 +55,11 @@ app.listen(port, () => {
  * Primary app routes.
  */
 
-app.use('/healthcheck', healthcheckRoutes);
-app.use('/books', bookRoutes);
-app.get('/getallbooks', async function (req, res) {
-    let bookArray = await getAllBooks()
-    res.send(bookArray)
-    });
-
-
-app.post('/test', function(req, res) {
-    let testVar = req.body.testInput;
-    console.log(testVar);
-});
-
 app.get("/login", function(req, res) {
     res.sendFile(__dirname + "/pages/index.html");
 });
 
 //var passport = require('passport')
-
 passport.use(new LocalStrategy({
         usernameField: 'username',
         passwordField: 'password'
@@ -91,6 +80,24 @@ passport.use(new LocalStrategy({
     }
 ));
 
+passport.use(new JWTStrategy({
+        jwtFromRequest: ExtractJWT.fromAuthHeaderAsBearerToken(),
+        secretOrKey   : 'your_jwt_secret'
+    },
+    async function (jwtPayload, cb){
+        await findUserByUsername(jwtPayload.userName)
+        .then(user => {
+            console.log('found the user!')
+            return cb(null, user);
+        })
+        .catch(err => {
+            console.log('user not found')
+            return cb(err);
+        })
+    }
+))
+
+
 app.post('/login', function (req, res, next) {
     passport.authenticate('local', {session: false}, (err, user, info) => {
         if (err) {
@@ -108,7 +115,7 @@ app.post('/login', function (req, res, next) {
             
         
 
-        const token = jwt.sign(JSON.stringify(user), 'your_just_secret');
+        const token = jwt.sign(JSON.stringify(user), 'your_jwt_secret');
         console.log("got the token");
         return res.json({user, token});
 
@@ -125,6 +132,15 @@ app.post('/login', function (req, res, next) {
         */
     })(req, res, next);
 }); 
+
+app.use('/healthcheck', passport.authenticate('jwt', {session: false}), healthcheckRoutes);
+app.use('/books', bookRoutes);
+app.get('/getallbooks', async function (req, res) {
+    let bookArray = await getAllBooks()
+    res.send(bookArray)
+});
+
+////// functions /////
 
 export function findUser(userName, password)
 {
@@ -157,6 +173,36 @@ export function findUser(userName, password)
     })
 }
 
+function findUserByUsername(userName)
+{
+    return new Promise((resolve, reject) => {
+        var sqlCommand = 'SELECT Token FROM Users \n WHERE Username=\'' + userName + '\';';
+        var request = new Request(sqlCommand, (err) => {
+            if(err){
+                throw err;
+            }                                                    
+        });
+
+        let result = [];
+        request.on('row', function(columns){
+            columns.forEach(function(column) {
+                result.push(column.value);
+            });
+        });
+
+        request.on('requestCompleted', function(rowCount, more){
+            if (result.length != 0) {
+                console.log("found the user");
+                resolve(new User(result[0], result[1]));
+            }
+            else {
+                console.log("no user found");
+                resolve(null);
+            }
+        });
+        connection.execSql(request);
+    })
+}
 
 function getAllBooks() {
     return new Promise((resolve, reject) => {
