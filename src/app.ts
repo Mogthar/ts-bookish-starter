@@ -58,10 +58,12 @@ const Book = sequelize.define('Book', {
 sequelize.sync({ alter: true}).then(value => {console.log("Synced")  
     }).catch(error => {console.error('Not synced:', error);})
 
+/*
 const barry = User.build({ UserName: "Barry", Token: "hotchocolate" });
 barry.save().then(value => {console.log('Barry was saved')
     }).catch(error => {console.log('Barry was not saved');
 })
+*/
 
 async function getAllUsers() {
     const users = await User.findAll();
@@ -91,7 +93,7 @@ app.get('/getallusers', async function (req, res) {
     let userArray = await getAllUsers()
     res.send(userArray)
 });
-
+/*
 
 app.get('/login', (req, res) => {
     res.sendFile(__dirname + "/pages/index.html")
@@ -135,7 +137,7 @@ function findUser(userName, password)
 
 
 
-/*
+
 
 var Request = require('tedious').Request;
 var Connection = require('tedious').Connection;
