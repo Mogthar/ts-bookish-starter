@@ -3,6 +3,7 @@ import 'dotenv/config';
 
 import healthcheckRoutes from './controllers/healthcheckController';
 import bookRoutes from './controllers/bookController';
+import { Sequelize, DataTypes } from 'sequelize';
 
 import {Request as ExpressRequest} from 'express'
 const jwt = require('jsonwebtoken');
@@ -11,6 +12,130 @@ const passportJWT = require("passport-jwt");
 const JWTStrategy = passportJWT.Strategy;
 const ExtractJWT = passportJWT.ExtractJwt;
 var LocalStrategy = require('passport-local').Strategy;
+const sequelize = new Sequelize('bookish', 'bookishuser', 'icedlatte1', {
+    host: 'localhost',
+    dialect: 'mssql'
+});
+
+
+sequelize.authenticate().then(value => {console.log('Connection has been established successfully.')
+    }).catch(error => {console.error('Unable to connect to the database:', error);})
+    
+
+const User = sequelize.define('User', {
+    UserName: {
+        type: DataTypes.STRING,
+        allowNull: false,
+        primaryKey: true
+    },
+    Token: {
+        type: DataTypes.STRING,
+        allowNull: false
+    }
+}, {
+    tableName: 'Users',
+    timestamps: false
+});
+
+const Book = sequelize.define('Book', {
+    ISBN: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+        primaryKey: true
+    },
+    BookName: {
+        type: DataTypes.STRING,
+        allowNull: false
+    },
+    CopiesOwned: {
+        type: DataTypes.INTEGER,
+        allowNull: false}
+}, {
+    tableName: 'Catalogue',
+    timestamps: false
+});
+
+sequelize.sync({ alter: true}).then(value => {console.log("Synced")  
+    }).catch(error => {console.error('Not synced:', error);})
+
+const barry = User.build({ UserName: "Barry", Token: "hotchocolate" });
+barry.save().then(value => {console.log('Barry was saved')
+    }).catch(error => {console.log('Barry was not saved');
+})
+
+async function getAllUsers() {
+    const users = await User.findAll();
+    return (JSON.stringify(users, null, 2));
+}
+
+async function getAllBooks() {
+    const books = await Book.findAll();
+    return (JSON.stringify(books, null, 2));
+}
+
+const port = process.env['PORT'] || 3000;
+
+const app = express();
+const router = express.Router();
+app.use(express.urlencoded({ extended: true }));            // what is this??
+app.listen(port, () => {
+    return console.log(`Express is listening at http://localhost:${port}`);
+});
+
+app.get('/getallbooks', async function (req, res) {
+    let bookArray = await getAllBooks()
+    res.send(bookArray)
+});
+
+app.get('/getallusers', async function (req, res) {
+    let userArray = await getAllUsers()
+    res.send(userArray)
+});
+
+
+app.get('/login', (req, res) => {
+    res.sendFile(__dirname + "/pages/index.html")
+});
+app.put('/login', async function (req, res) => {
+    myUser = await User.findOne({ where: { UserName: req.body.userName}})
+})
+
+function findUser(userName, password)
+{
+    return new Promise((resolve, reject) => {
+        var sqlCommand = 'SELECT Token FROM Users \n WHERE Username=\'' + userName + '\';';
+        var request = new Request(sqlCommand, (err) => {
+            if(err){
+                throw err;
+            }                                                    
+        });
+
+        let result;
+        request.on('row', function(columns){
+            columns.forEach(function(column) {
+                result = column.value;
+            });
+        });
+
+        request.on('requestCompleted', function(rowCount, more){
+            if (result === password) {
+                console.log("match");
+                resolve(new User(userName, password));
+            }
+            else {
+                console.log("no match");
+                resolve(null);
+            }
+        });
+        connection.execSql(request);
+    })
+}
+
+
+
+
+
+/*
 
 var Request = require('tedious').Request;
 var Connection = require('tedious').Connection;
@@ -54,11 +179,12 @@ app.listen(port, () => {
 /**
  * Primary app routes.
  */
-
+/*
 app.get("/login", function(req, res) {
     res.sendFile(__dirname + "/pages/index.html");
 });
 
+/*
 //var passport = require('passport')
 passport.use(new LocalStrategy({
         usernameField: 'username',
@@ -129,7 +255,7 @@ app.post('/login', function (req, res, next) {
             return res.json({user, token});
         
         })
-        */
+        
     })(req, res, next);
 }); 
 
@@ -225,7 +351,7 @@ function getAllBooks() {
         connection.execSql(request);
     })
 }
-
+/*
 class Book{
     isbn: number;
     bookName: string;
@@ -247,3 +373,4 @@ class User{
         this.password = password
     }
 }
+*/
