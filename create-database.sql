@@ -12,7 +12,7 @@ CREATE TABLE Catalogue (
 );
 
 CREATE TABLE Authors (
-	AuthorID int IDENTITY(0,1) NOT NULL,
+	AuthorID int NOT NULL AUTO_INCREMENT,
 	AuthorName varchar(255) NOT NULL,
 	PRIMARY KEY (AuthorID)
 );
@@ -24,7 +24,7 @@ CREATE TABLE Users (
 );
 
 CREATE TABLE BookedBooks (
-	ID int IDENTITY(0,1) NOT NULL,
+	ID int NOT NULL AUTO_INCREMENT,
 	ISBN int NOT NULL,
 	UserName varchar(255) NOT NULL,
 	DateDue date NOT NULL,

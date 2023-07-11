@@ -55,6 +55,21 @@ const Book = sequelize.define('Book', {
     timestamps: false
 });
 
+const Author = sequelize.define('Author', {
+    AuthorID: {
+        type: DataTypes.INTEGER,
+        autoIncrement: true,
+        allowNull: false,
+        primaryKey: true
+    },
+    AuthorName: {
+        type: DataTypes.STRING,
+        allowNull: false
+    }},{
+        tableName: 'Authors',
+        timestamps: false
+});
+
 sequelize.sync({ alter: true}).then(value => {console.log("Synced")  
     }).catch(error => {console.error('Not synced:', error);})
 
@@ -93,6 +108,18 @@ app.get('/getallusers', async function (req, res) {
     let userArray = await getAllUsers()
     res.send(userArray)
 });
+
+app.get('/inputBook', (req, res) => {
+    res.sendFile(__dirname + "/pages/inputBook.html")
+});
+
+app.post('/inputBook', async function(req, res){
+    await Book.create({ISBN: req.body.ISBN, BookName: req.body.BookName, CopiesOwned: req.body.CopiesOwned});
+    console.log('book added!')
+    await Author.create({AuthorName: req.body.AuthorName});
+    console.log('Author added')
+});
+
 /*
 
 app.get('/login', (req, res) => {
